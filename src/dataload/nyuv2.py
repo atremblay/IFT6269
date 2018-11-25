@@ -17,7 +17,6 @@ class NYUV2(DataSet):
         :param d:
         :return:
         """
-        self.dir = os.path.join(self.dir, 'nyud')  # todo: temporary
 
         files = self._load_mat(os.path.join(self.dir, d + '.mat'), 'split_ids')
 

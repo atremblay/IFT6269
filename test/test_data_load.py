@@ -17,11 +17,11 @@ class TestDataLoad(TestCase):
                     for task in ('regression', 'classification'):
                         d.task = task
                         print("dataset: %s, mode: %s, task: %s" % (k, mode, task))
-                        self.assertRaises(Exception, d.load())
+                        self.assertEqual(d.load(), None)
                         d.unload()
                 else:
                     print("dataset: %s, mode: %s" % (k, mode))
-                    self.assertRaises(Exception, d.load())
+                    self.assertEqual(d.load(), None)
                     d.unload()
 
 

@@ -2,6 +2,8 @@ import os
 import importlib
 from torch.utils.data import Dataset
 from skimage import io
+from PIL import ImageFile
+
 
 
 class DatasetLib:
@@ -47,7 +49,15 @@ class DataSet(Dataset):
 
     @staticmethod
     def _load_image(path_image):
-        return io.imread(path_image)
+        try:
+            img = io.imread(path_image)
+        except ValueError as e:
+            ImageFile.LOAD_TRUNCATED_IMAGES = True  # Some Images have are truncated and raise an error at load. This disables the error
+            img = io.imread(path_image)
+            ImageFile.LOAD_TRUNCATED_IMAGES = False
+            print('Warning - '+path_image + ' possibly invalid: ' + str(e).split('\n')[1])
+
+        return img
 
     def __len__(self):
         return len(self.data[self.mode][0])
