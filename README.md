@@ -1,6 +1,7 @@
-# IFT6269
+# IFT6269 - Fall 2018
 
-
+Probabilistic Graphical Models at the University of Montreal
+http://www.iro.umontreal.ca/~slacoste/teaching/ift6269/A18/
 
 
 ## Session project
