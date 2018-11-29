@@ -5,7 +5,6 @@ from skimage import io
 from PIL import ImageFile
 
 
-
 class DatasetLib:
 
     def __init__(self, data_dir):
@@ -16,7 +15,9 @@ class DatasetLib:
         # Data set dictionary
         datasets = {}
         for p in os.listdir(self.data_dir):
-            dataset_class = getattr(importlib.import_module('.'+p, 'src.dataload'), p.upper())
+            dataset_class = getattr(
+                importlib.import_module('.' + p, 'src.dataload'), p.upper()
+            )
             datasets[p] = dataset_class(p, os.path.join(self.data_dir, p))
 
         return datasets
@@ -52,10 +53,17 @@ class DataSet(Dataset):
         try:
             img = io.imread(path_image)
         except ValueError as e:
-            ImageFile.LOAD_TRUNCATED_IMAGES = True  # Some Images have are truncated and raise an error at load. This disables the error
+            # Some Images have are truncated and raise an error at load.
+            # This disables the error
+            ImageFile.LOAD_TRUNCATED_IMAGES = True
             img = io.imread(path_image)
             ImageFile.LOAD_TRUNCATED_IMAGES = False
-            print('Warning - '+path_image + ' possibly invalid: ' + str(e).split('\n')[1])
+            print(
+                'Warning -',
+                path_image,
+                'possibly invalid:',
+                str(e).split('\n')[1]
+            )
 
         return img
 
@@ -70,5 +78,3 @@ class DataSet(Dataset):
             sample = self.transform(sample)
 
         return sample
-
-
