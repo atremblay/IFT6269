@@ -34,6 +34,30 @@ def parse_args():
     return args
 
 
+def aleatoric_loss(true, pred, var):
+    """
+    Taken from https://arxiv.org/pdf/1703.04977.pdf
+
+    Theory says we should implement equation (5),
+    but practice says equation (8).
+
+    This paper is for computer vision, but the theory behind it applies to
+    any neural network model. Here we are using it for NLP.
+
+    Params
+    ======
+    true: torch tensor
+        The true targets
+    pred: torch tensor
+        The predictions
+    var: torch tensor
+        The uncertainty of every prediction (actually log(var)).
+    """
+    loss = torch.exp(-var) * (true - pred)**2 / 2
+    loss += 0.5 * var
+    return torch.mean(loss)
+
+
 if __name__ == '__main__':
     args = parse_args()
 
