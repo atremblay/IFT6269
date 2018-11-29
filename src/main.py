@@ -1,4 +1,5 @@
 from dataload import dataload
+from torch.utils.data import DataLoader
 from model.densenet import DenseNet, summary
 import argparse
 import torch
@@ -13,10 +14,23 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--opt', type=str, default='sgd',
                         choices=('sgd', 'adam', 'rmsprop'))
+    parser.add_argument(
+        '--dataset',
+        required=True,
+        choices=["nnyuv2", "camvid", "make3d"]
+    )
+    parser.add_argument(
+        "--task", choices=['regression', 'classification']
+    )
     args = parser.parse_args()
     if args.cuda and not torch.nn.is_available():
         print("CUDA not available on your machine. Setting it back to False")
         args.cuda = False
+
+    if args.dataset == 'nnyuv2':
+        if 'task' not in args:
+            msg = 'Need to provide --task when you select --dataset nnyuv2'
+            raise Exception(msg)
     return args
 
 
@@ -27,11 +41,17 @@ if __name__ == '__main__':
     data_sets = dataload.DatasetLib('/home/data/')
     print('Available Datasets:' + str(list(data_sets.datasets.keys())))
 
-    d = data_sets['make3d']  #nnyuv2, camvid, or make3d
-    d.mode = 'Test'  # Train or Test
-    # d.task = 'regression' # regression or classification (for nyuv2 only)
-    d.load()
-    d.unload()
+    d_train = data_sets[args.dataset]  # nnyuv2, camvid, or make3d
+    d_test = data_sets[args.dataset]  # nnyuv2, camvid, or make3d
+    if args.dataset == 'nnyuv2':
+        d_train.task = args.task
+        d_test.task = args.task
+    d_train.mode = 'Train'  # Train or Test
+    d_test.mode = 'Test'  # Train or Test
+    d_train.load()
+    d_test.load()
+    train_loader = DataLoader(d_train, batch_size=args.batch_size)
+    test_loader = DataLoader(d_test, batch_size=args.batch_size)
 
     # Took these values directly from the other implementation
     net = DenseNet(
