@@ -2,6 +2,7 @@ from .dataload import DataSet
 import os
 from torchvision import transforms
 
+
 class CAMVID(DataSet):
     """ CamVid dataset loading taking from https://github.com/alexgkendall/SegNet-Tutorial/tree/master/CamVid
 
@@ -43,6 +44,4 @@ class CAMVID(DataSet):
 
         # Complete file path mapping
         return [(os.path.join(input_dir, f), os.path.join(label_dir, f)) for f in input_files]
-
-
 

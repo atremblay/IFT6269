@@ -1,8 +1,7 @@
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-print(torch.FloatTensor(2, 2))
+
 
 def tile(input, dim, n_tile):
     """
