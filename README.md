@@ -4,7 +4,7 @@ Probabilistic Graphical Models at the University of Montreal
 http://www.iro.umontreal.ca/~slacoste/teaching/ift6269/A18/
 
 
-## Session project
+## Session project!
 Implementing [What Uncertainties Do We Need in Bayesian Deep Learning for Computer Vision?](https://arxiv.org/pdf/1703.04977.pdf)
 
 Students in alphabetical order:
