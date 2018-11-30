@@ -70,9 +70,28 @@ class SingleLayer(nn.Module):
         return out
 
 
-class Transition(nn.Module):
+class TransitionDown(nn.Module):
     def __init__(self, nChannels, nOutChannels):
-        super(Transition, self).__init__()
+        super(TransitionDown, self).__init__()
+        self.bn1 = nn.BatchNorm2d(nChannels)
+        self.conv1 = nn.Conv2d(
+            nChannels,
+            nOutChannels,
+            kernel_size=1,
+            bias=False
+        )
+        self.dropout1 = nn.Dropout(0.2)
+
+    def forward(self, x):
+        out = self.conv1(F.relu(self.bn1(x)))
+        out = self.dropout1(out)
+        out = F.avg_pool2d(out, 2)
+        return out
+
+
+class TransitionUp(nn.Module):
+    def __init__(self, nChannels, nOutChannels):
+        super(TransitionUp, self).__init__()
         self.bn1 = nn.BatchNorm2d(nChannels)
         self.conv1 = nn.Conv2d(
             nChannels,
@@ -114,7 +133,7 @@ class DenseNet(nn.Module):
         )
         nChannels += nDenseBlocks * growthRate
         nOutChannels = int(math.floor(nChannels * reduction))
-        self.trans1 = Transition(nChannels, nOutChannels)
+        self.trans1 = TransitionDown(nChannels, nOutChannels)
 
         nChannels = nOutChannels
         self.dense2 = self._make_dense(
@@ -125,7 +144,7 @@ class DenseNet(nn.Module):
         )
         nChannels += nDenseBlocks * growthRate
         nOutChannels = int(math.floor(nChannels * reduction))
-        self.trans2 = Transition(nChannels, nOutChannels)
+        self.trans2 = TransitionDown(nChannels, nOutChannels)
 
         nChannels = nOutChannels
         self.dense3 = self._make_dense(

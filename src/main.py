@@ -1,8 +1,10 @@
 from dataload import dataload
 from torch.utils.data import DataLoader
-from model.densenet import DenseNet, summary
+from model.densenet import FCDenseNet, summary
 import argparse
 import torch
+import torch.optim as optim
+import os
 
 
 def parse_args():
@@ -57,6 +59,7 @@ def aleatoric_loss(true, pred, var):
     loss += 0.5 * var
     return torch.mean(loss)
 
+
 def prepare_dataset(args):
     # Data Path
     data_sets = dataload.DatasetLib('/home/data/')
@@ -71,10 +74,70 @@ def prepare_dataset(args):
     d_test.mode = 'Test'  # Train or Test
     d_train.load()
     d_test.load()
-    train_loader = DataLoader(d_train, batch_size=args.batch_size)
-    test_loader = DataLoader(d_test, batch_size=args.batch_size)
+    train_loader = DataLoader(
+        d_train,
+        batch_size=args.batch_size,
+        # transform=d_train.transform
+    )
+    test_loader = DataLoader(
+        d_test,
+        batch_size=args.batch_size,
+        # transform=d_test.transform
+    )
 
     return train_loader, test_loader
+
+
+def train(args, epoch, net, trainLoader, optimizer, trainF):
+    net.train()
+    nProcessed = 0
+    nTrain = len(trainLoader.dataset)
+    for batch_idx, (data, target) in enumerate(trainLoader):
+        if args.cuda:
+            data, target = data.cuda(), target.cuda()
+
+        optimizer.zero_grad()
+        output = net(data)
+        loss = F.nll_loss(output, target)
+        # make_graph.save('/tmp/t.dot', loss.creator); assert(False)
+        loss.backward()
+        optimizer.step()
+        nProcessed += len(data)
+        pred = output.data.max(1)[1]  # get the index of the max log-probability
+        incorrect = pred.ne(target.data).cpu().sum()
+        err = 100. * incorrect / len(data)
+        partialEpoch = epoch + batch_idx / len(trainLoader) - 1
+        print('Train Epoch: {:.2f} [{}/{} ({:.0f}%)]\tLoss: {:.6f}\tError: {:.6f}'.format(
+            partialEpoch, nProcessed, nTrain, 100. * batch_idx / len(trainLoader),
+            loss.data[0], err)
+        )
+
+        trainF.write('{},{},{}\n'.format(partialEpoch, loss.data[0], err))
+        trainF.flush()
+
+
+def test(args, epoch, net, testLoader, optimizer, testF):
+    net.eval()
+    test_loss = 0
+    incorrect = 0
+    for data, target in testLoader:
+        if args.cuda:
+            data, target = data.cuda(), target.cuda()
+
+        output = net(data)
+        test_loss += F.nll_loss(output, target).data[0]
+        pred = output.data.max(1)[1]  # get the index of the max log-probability
+        incorrect += pred.ne(target.data).cpu().sum()
+
+    test_loss = test_loss
+    test_loss /= len(testLoader) # loss function already averages over batch size
+    nTotal = len(testLoader.dataset)
+    err = 100.*incorrect/nTotal
+    print('\nTest set: Average loss: {:.4f}, Error: {}/{} ({:.0f}%)\n'.format(
+        test_loss, incorrect, nTotal, err))
+
+    testF.write('{},{},{}\n'.format(epoch, test_loss, err))
+    testF.flush()
 
 
 if __name__ == '__main__':
@@ -82,7 +145,7 @@ if __name__ == '__main__':
     train_loader, test_loader = prepare_dataset(args)
 
     # Took these values directly from the other implementation
-    net = DenseNet(
+    net = FCDenseNet(
         growthRate=12,
         depth=100,
         reduction=0.5,
@@ -94,5 +157,29 @@ if __name__ == '__main__':
     for samples in train_loader:
         print(samples)
 
+    if args.cuda:
+        net = net.cuda()
 
-    #summary(net)
+    if args.opt == 'sgd':
+        optimizer = optim.SGD(
+            net.parameters(),
+            lr=1e-1,
+            momentum=0.9,
+            weight_decay=1e-4
+        )
+    elif args.opt == 'adam':
+        optimizer = optim.Adam(net.parameters(), weight_decay=1e-4)
+    elif args.opt == 'rmsprop':
+        optimizer = optim.RMSprop(net.parameters(), weight_decay=1e-4)
+
+    summary(net)
+
+    trainF = open(os.path.join(args.save, 'train.csv'), 'w')
+    testF = open(os.path.join(args.save, 'test.csv'), 'w')
+
+    for epoch in range(1, args.nEpochs + 1):
+        # adjust_opt(args.opt, optimizer, epoch)
+        train(args, epoch, net, train_loader, optimizer, trainF)
+        test(args, epoch, net, test_loader, optimizer, testF)
+        # torch.save(net, os.path.join(args.save, 'latest.pth'))
+        # os.system('./plot.py {} &'.format(args.save))
