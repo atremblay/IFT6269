@@ -57,10 +57,7 @@ def aleatoric_loss(true, pred, var):
     loss += 0.5 * var
     return torch.mean(loss)
 
-
-if __name__ == '__main__':
-    args = parse_args()
-
+def prepare_dataset(args):
     # Data Path
     data_sets = dataload.DatasetLib('/home/data/')
     print('Available Datasets:' + str(list(data_sets.datasets.keys())))
@@ -77,6 +74,13 @@ if __name__ == '__main__':
     train_loader = DataLoader(d_train, batch_size=args.batch_size)
     test_loader = DataLoader(d_test, batch_size=args.batch_size)
 
+    return train_loader, test_loader
+
+
+if __name__ == '__main__':
+    args = parse_args()
+    train_loader, test_loader = prepare_dataset(args)
+
     # Took these values directly from the other implementation
     net = DenseNet(
         growthRate=12,
@@ -86,4 +90,9 @@ if __name__ == '__main__':
         nClasses=10  # Need to set this to the appropriate number of classes
     )
 
-    summary(net)
+    # Todo: Move to appropriate train function
+    for samples in train_loader:
+        print(samples)
+
+
+    #summary(net)

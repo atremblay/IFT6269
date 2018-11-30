@@ -1,11 +1,16 @@
 from .dataload import DataSet
 import os
-
+from torchvision import transforms
 
 class CAMVID(DataSet):
     """ CamVid dataset loading taking from https://github.com/alexgkendall/SegNet-Tutorial/tree/master/CamVid
 
     """
+    def __init__(self, name, dataset_dir):
+        super().__init__(name, dataset_dir)
+        self.transform =  transforms.Compose([
+                             transforms.CenterCrop(224),
+                             transforms.ToTensor(),])
 
     def load_specific(self, d):
         """ Private function to load train, or test dataset.

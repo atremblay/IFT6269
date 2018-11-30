@@ -3,7 +3,7 @@ import importlib
 from torch.utils.data import Dataset
 from skimage import io
 from PIL import ImageFile
-
+from PIL import Image
 
 class DatasetLib:
 
@@ -33,6 +33,7 @@ class DataSet(Dataset):
         self.data = {'Test': None, 'Train': None}
         self.mode = 'Train'
         self.task = None
+        self.transform = None
 
     def load(self):
         """
@@ -65,16 +66,17 @@ class DataSet(Dataset):
                 str(e).split('\n')[1]
             )
 
-        return img
+        return Image.fromarray(img)
 
     def __len__(self):
         return len(self.data[self.mode][0])
 
     def __getitem__(self, idx):
 
-        sample = self.data[self.mode][idx]
+        inp, labels = self.data[self.mode][idx]
 
         if self.transform:
-            sample = self.transform(sample)
+            inp = self.transform(inp)
+            labels = self.transform(labels)
 
-        return sample
+        return inp, labels
