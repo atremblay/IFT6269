@@ -2,9 +2,9 @@ import logging
 
 class Job:
 
-    def __init__(self, save_file_path, loader, net):
+    def __init__(self, save_file_path, data_loader, net):
         self.save_file_path = save_file_path
-        self.loader = loader
+        self.data_loader = data_loader
         self.net = net
         self.logger = logging.getLogger(str(type(self)))
 

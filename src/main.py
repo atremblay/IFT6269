@@ -24,14 +24,14 @@ if __name__ == '__main__':
     data_loader = DataLoader(d, batch_size=args.args.batch_size)
 
     # Took these values directly from the other implementation
-    net = FCDenseNet103(n_classes=40)
+    net = FCDenseNet103(n_classes=d.number_of_classes)
     net = args.resolve_cuda(net)
     optimizer = args.resolve_optimizer(net)
 
     #summary(net)
     # Initiate jobs
-    train = Train(save_file_path=os.path.join(args.args.save, 'train.csv'), loader=data_loader, net=net)
-    test = Test(save_file_path=os.path.join(args.args.save, 'test.csv'), loader=data_loader, net=net)
+    train = Train(save_file_path=os.path.join(args.args.save, 'train.csv'), data_loader=data_loader, net=net)
+    test = Test(save_file_path=os.path.join(args.args.save, 'test.csv'), data_loader=data_loader, net=net)
 
     # Raw Training
     for epoch in range(1, args.args.epochs + 1):

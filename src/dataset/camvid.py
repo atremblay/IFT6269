@@ -17,6 +17,8 @@ class CAMVID(DataSet):
         self.transform_target = {False: transforms.Compose([transforms.CenterCrop(224)]),
                                  True: transforms.Compose([])
                                 }
+        self.number_of_classes = 12
+
 
     def load_specific(self, d):
         """ Private function to load train, or tests dataset.
@@ -30,7 +32,6 @@ class CAMVID(DataSet):
         label_dir = os.path.join(self.dir, d + 'annot')
 
         mapping = self.map_files(input_dir, label_dir)
-
         return [(self._load_image(f[0]), self._load_image(f[1])) for f in mapping]
 
     @staticmethod

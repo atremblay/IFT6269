@@ -5,11 +5,12 @@ from utils.device import device
 class Test(Job):
 
     def __call__(self, epoch):
+        self.data_loader.dataset.mode = 'Test'
+
         self.net.eval()
         test_loss = 0
         incorrect = 0
-        self.loader.dataset.mode = 'Test'
-        for data, target in self.loader:
+        for data, target in self.data_loader:
 
             data, target = device(data), device(target)
 
@@ -18,8 +19,8 @@ class Test(Job):
             pred = self.get_predictions(output)
             incorrect +=  self.error(pred, target.data.cpu())
 
-        test_loss /= len(self.loader)  # loss function already averages over batch size
-        nTotal = len(self.loader.dataset)
+        test_loss /= len(self.data_loader)  # loss function already averages over batch size
+        nTotal = len(self.data_loader.dataset)
         err = 100. * incorrect / nTotal
 
         self.logger.info(
