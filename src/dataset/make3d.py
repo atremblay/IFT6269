@@ -10,7 +10,7 @@ class MAKE3D(DataSet):
     """
 
     def load_specific(self, d):
-        """ Private function to load train, or test dataset.
+        """ Private function to load train, or tests dataset.
 
         First, creates the mapping between labels files, and inputs files.
 

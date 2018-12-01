@@ -1,5 +1,4 @@
-import torch.nn as nn
-from .layers import *
+from model.layers import *
 
 
 class FCDenseNet(nn.Module):

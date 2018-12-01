@@ -5,6 +5,7 @@ from skimage import io
 from PIL import ImageFile
 from PIL import Image
 
+
 class DatasetLib:
 
     def __init__(self, data_dir):
@@ -16,7 +17,7 @@ class DatasetLib:
         datasets = {}
         for p in os.listdir(self.data_dir):
             dataset_class = getattr(
-                importlib.import_module('.' + p, 'src.dataload'), p.upper()
+                importlib.import_module('.' + p, 'src.dataset'), p.upper()
             )
             datasets[p] = dataset_class(p, os.path.join(self.data_dir, p))
 
@@ -37,14 +38,14 @@ class DataSet(Dataset):
 
     def load(self):
         """
-        Function to load train, or test dataset
+        Function to load train, or tests dataset
         :return:
         """
         self.data[self.mode] = self.load_specific(self.mode.lower())
 
     def unload(self):
         """
-        Function to unload train, or test dataset
+        Function to unload train, or tests dataset
         :return:
         """
         self.data[self.mode] = None
@@ -70,13 +71,3 @@ class DataSet(Dataset):
 
     def __len__(self):
         return len(self.data[self.mode][0])
-
-    def __getitem__(self, idx):
-
-        inp, labels = self.data[self.mode][idx]
-
-        if self.transform:
-            inp = self.transform(inp)
-            labels = self.transform(labels)
-
-        return inp, labels

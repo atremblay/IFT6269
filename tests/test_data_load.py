@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from src.dataload import dataload
+from src.dataset import dataload
 
 
 class TestDataLoad(TestCase):

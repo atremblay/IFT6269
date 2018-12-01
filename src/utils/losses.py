@@ -18,6 +18,7 @@ def tile(input, dim, n_tile):
     order_index = torch.LongTensor(np.concatenate([init_dim * np.arange(n_tile) + i for i in range(init_dim)]))
     return torch.index_select(input, dim, order_index)
 
+
 def heteroscedastic_classification_loss(fs, sigmas, target, T=50):
     """
     loss function of heteroscedastic classifciation for semantic segmentation
@@ -61,18 +62,26 @@ def heteroscedastic_classification_loss(fs, sigmas, target, T=50):
 
     return loss
 
-# def cross_entropy2d(input, target, weight=None, size_average=True):
-#     n, c, h, w = input.size()
-#     nt, ht, wt = target.size()
-#
-#     # Handle inconsistent size between input and target
-#     if h != ht or w != wt:
-#         input = F.interpolate(input, size=(ht, wt), mode="bilinear", align_corners=True)
-#
-#     input = input.transpose(1, 2).transpose(2, 3).contiguous().view(-1, c)
-#     target = target.view(-1)
-#
-#     loss = F.cross_entropy(
-#         input, target, weight=weight, size_average=size_average, ignore_index=250
-#     )
-#     return loss
+
+def aleatoric_loss(true, pred, var):
+    """
+    Taken from https://arxiv.org/pdf/1703.04977.pdf
+
+    Theory says we should implement equation (5),
+    but practice says equation (8).
+
+    This paper is for computer vision, but the theory behind it applies to
+    any neural network model. Here we are using it for NLP.
+
+    Params
+    ======
+    true: torch tensor
+        The true targets
+    pred: torch tensor
+        The predictions
+    var: torch tensor
+        The uncertainty of every prediction (actually log(var)).
+    """
+    loss = torch.exp(-var) * (true - pred)**2 / 2
+    loss += 0.5 * var
+    return torch.mean(loss)

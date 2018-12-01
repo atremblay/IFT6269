@@ -1,6 +1,8 @@
 from .dataload import DataSet
 import os
 from torchvision import transforms
+import numpy as np
+import torch
 
 
 class CAMVID(DataSet):
@@ -12,9 +14,10 @@ class CAMVID(DataSet):
         self.transform =  transforms.Compose([
                              transforms.CenterCrop(224),
                              transforms.ToTensor(),])
+        self.transform_target = transforms.Compose([transforms.CenterCrop(224)])
 
     def load_specific(self, d):
-        """ Private function to load train, or test dataset.
+        """ Private function to load train, or tests dataset.
 
         First, creates the mapping between labels files, and inputs files.
 
@@ -44,4 +47,15 @@ class CAMVID(DataSet):
 
         # Complete file path mapping
         return [(os.path.join(input_dir, f), os.path.join(label_dir, f)) for f in input_files]
+
+    def __getitem__(self, idx):
+
+        inp, labels = self.data[self.mode][idx]
+
+        if self.transform:
+            inp = self.transform(inp)
+            labels = self.transform_target(labels)
+            labels = torch.from_numpy(np.asarray(labels, dtype=np.long))
+
+        return inp, labels
 
