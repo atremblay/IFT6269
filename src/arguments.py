@@ -14,7 +14,7 @@ class Args:
         self.parser = argparse.ArgumentParser()
         # Add arguments
         self.parser.add_argument('--batch_size', type=int, default=4)
-        self.parser.add_argument('--epochs', type=int, default=100)
+        self.parser.add_argument('--epochs', type=int, default=20)
         self.parser.add_argument('--finetuneepochs', type=int, default=10)
         self.parser.add_argument('--cuda', default=False, action='store_true')
         self.parser.add_argument('--save', type=str, default='/home/execution')

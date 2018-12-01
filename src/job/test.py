@@ -24,7 +24,7 @@ class Test(Job):
         err = 100. * incorrect / nTotal
 
         self.logger.info(
-            'Epoch: {}, Loss: {:.4f}, Error: {}/{} ({:.0f}%), Device: {}\n'.format(epoch,
+            'Epoch: {}, Loss: {:.4f}, Error: {}/{} ({:.0f}%), Device: {}'.format(epoch,
             test_loss, incorrect, nTotal, err, device))
 
         self.append_save_data([epoch, test_loss, err])
