@@ -1,5 +1,4 @@
-import torch.nn as nn
-from .layers import *
+from model.layers import *
 
 
 class FCDenseNet(nn.Module):
@@ -89,6 +88,14 @@ class FCDenseNet(nn.Module):
             bias=True
         )
         self.softmax = nn.LogSoftmax(dim=1)
+
+        self.apply(self.weights_init)
+
+    @staticmethod
+    def weights_init(m):
+        if isinstance(m, nn.Conv2d):
+            nn.init.kaiming_uniform_(m.weight)
+            m.bias.data.zero_()
 
     def forward(self, x):
         out = self.firstconv(x)
