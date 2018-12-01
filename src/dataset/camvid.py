@@ -17,7 +17,7 @@ class CAMVID(DataSet):
         self.transform_target = {False: transforms.Compose([transforms.CenterCrop(224)]),
                                  True: transforms.Compose([])
                                 }
-        self.number_of_classes = 12
+        self.number_of_classes = 11 + 1
 
 
     def load_specific(self, d):
