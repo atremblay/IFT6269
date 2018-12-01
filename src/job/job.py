@@ -4,12 +4,13 @@ import numpy as np
 
 class Job:
 
-    def __init__(self, save_file_path, data_loader, net):
+    def __init__(self, save_file_path, data_loader, net, loss):
         self.save_file_path = save_file_path
         self.data_loader = data_loader
         self.net = net
         self.logger = logging.getLogger(str(type(self)))
         self.name = str(type(self)).split('.')[-1]
+        self.loss = loss
 
     def append_save_data(self, content):
         with open(self.save_file_path, 'a') as f:

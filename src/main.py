@@ -52,9 +52,10 @@ if __name__ == '__main__':
     # Raw Training
     # Initiate jobs
     execution_data_folder += os.path.sep + 'pid' + str(os.getpid())
+    loss = args.resolve_loss()
 
-    train = Train(save_file_path=os.path.join(execution_data_folder,  'train.csv'), data_loader=data_loader, net=net)
-    test = Test(save_file_path=os.path.join(execution_data_folder, 'test.csv'), data_loader=data_loader, net=net)
+    train = Train(save_file_path=os.path.join(execution_data_folder,  'train.csv'), data_loader=data_loader, net=net, loss=loss)
+    test = Test(save_file_path=os.path.join(execution_data_folder, 'test.csv'), data_loader=data_loader, net=net, loss=loss)
     training_loop(0, args.args.epochs, optimizer, train, test, logger)
 
 
