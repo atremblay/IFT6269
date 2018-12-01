@@ -32,6 +32,7 @@ class DataSet(Dataset):
         self.name = name
         self.dir = dataset_dir
         self.data = {'Test': None, 'Train': None}
+        self.fine_tune=False
         self.mode = 'Train'
         self.task = None
         self.transform = None
@@ -70,4 +71,4 @@ class DataSet(Dataset):
         return Image.fromarray(img)
 
     def __len__(self):
-        return len(self.data[self.mode][0])
+        return len(self.data[self.mode])

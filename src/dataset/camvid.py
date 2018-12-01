@@ -11,10 +11,12 @@ class CAMVID(DataSet):
     """
     def __init__(self, name, dataset_dir):
         super().__init__(name, dataset_dir)
-        self.transform =  transforms.Compose([
-                             transforms.CenterCrop(224),
-                             transforms.ToTensor(),])
-        self.transform_target = transforms.Compose([transforms.CenterCrop(224)])
+        self.transform =  {False: transforms.Compose([transforms.CenterCrop(224), transforms.ToTensor(),]),
+                           True: transforms.Compose([transforms.ToTensor(),])
+                           }
+        self.transform_target = {False: transforms.Compose([transforms.CenterCrop(224)]),
+                                 True: transforms.Compose([])
+                                }
 
     def load_specific(self, d):
         """ Private function to load train, or tests dataset.
@@ -52,10 +54,9 @@ class CAMVID(DataSet):
 
         inp, labels = self.data[self.mode][idx]
 
-        if self.transform:
-            inp = self.transform(inp)
-            labels = self.transform_target(labels)
-            labels = torch.from_numpy(np.asarray(labels, dtype=np.long))
+        inp = self.transform[self.fine_tune](inp)
+        labels = self.transform_target[self.fine_tune](labels)
+        labels = torch.from_numpy(np.asarray(labels, dtype=np.long))
 
         return inp, labels
 

@@ -1,7 +1,6 @@
 import argparse
 import torch
 from dataset import dataload
-from torch.utils.data import DataLoader
 import torch.optim as optim
 import logging
 from utils.device import device
@@ -14,8 +13,9 @@ class Args:
 
         self.parser = argparse.ArgumentParser()
         # Add arguments
-        self.parser.add_argument('--batch_size', type=int, default=64)
-        self.parser.add_argument('--epochs', type=int, default=300)
+        self.parser.add_argument('--batch_size', type=int, default=4)
+        self.parser.add_argument('--epochs', type=int, default=100)
+        self.parser.add_argument('--finetuneepochs', type=int, default=10)
         self.parser.add_argument('--cuda', default=False, action='store_true')
         self.parser.add_argument('--save', type=str, default='/home/execution')
         self.parser.add_argument('--seed', type=int, default=42)
@@ -23,6 +23,7 @@ class Args:
         self.parser.add_argument('--dataset', required=True, choices=["nyuv2", "camvid", "make3d"])
         self.parser.add_argument("--task", choices=['regression', 'classification'])
         self.parser.add_argument("--data_folder", default='/home/data/', type=str)
+        self.parser.add_argument("--lr", default=1e-3, type=float)
         self.args = self.parser.parse_args()
 
     def resolve_dataset(self):
@@ -36,29 +37,17 @@ class Args:
         # Data Path
         data_sets = dataload.DatasetLib(self.args.data_folder)
 
-        d_train = data_sets[self.args.dataset]
-        d_test = data_sets[self.args.dataset]
+        d = data_sets[self.args.dataset]
 
         if self.args.dataset == 'nyuv2':
-            d_train.task = self.args.task
-            d_test.task = self.args.task
+            d.task = self.args.task
 
-        d_train.mode = 'Train'  # Train or Test
-        d_test.mode = 'Test'  # Train or Test
-        d_train.load()
-        d_test.load()
-        train_loader = DataLoader(
-            d_train,
-            batch_size=self.args.batch_size,
-            # transform=d_train.transform
-        )
-        test_loader = DataLoader(
-            d_test,
-            batch_size=self.args.batch_size,
-            # transform=d_test.transform
-        )
+        d.mode = 'Train'  # Train or Test
+        d.load()
+        d.mode = 'Test'  # Train or Test
+        d.load()
 
-        return train_loader, test_loader
+        return d
 
     def resolve_cuda(self, net):
 
@@ -79,14 +68,14 @@ class Args:
         if self.args.opt == 'sgd':
             optimizer = optim.SGD(
                 net.parameters(),
-                lr=1e-1,
+                lr=self.args.lr,
                 momentum=0.9,
                 weight_decay=1e-4
             )
         elif self.args.opt == 'adam':
-            optimizer = optim.Adam(net.parameters(), weight_decay=1e-4)
+            optimizer = optim.Adam(net.parameters(), weight_decay=1e-4, lr=self.args.lr)
         elif self.args.opt == 'rmsprop':
-            optimizer = optim.RMSprop(net.parameters(), weight_decay=1e-4)
+            optimizer = optim.RMSprop(net.parameters(), weight_decay=1e-4, lr=self.args.lr)
         else:
             self.parser.print_help()
             raise ValueError( 'Invalid optimizer value fro argument --opt:' + self.args.opt)

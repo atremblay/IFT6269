@@ -8,22 +8,23 @@ class Test(Job):
         self.net.eval()
         test_loss = 0
         incorrect = 0
+        self.loader.dataset.mode = 'Test'
         for data, target in self.loader:
 
             data, target = device(data), device(target)
 
             output = self.net(data)
             test_loss += F.nll_loss(output, target).item()
-            pred = output.data.max(1)[1]  # get the index of the max log-probability
-            incorrect += pred.ne(target.data).cpu().sum()
+            pred = self.get_predictions(output)
+            incorrect +=  self.error(pred, target.data.cpu())
 
-        test_loss = test_loss
         test_loss /= len(self.loader)  # loss function already averages over batch size
         nTotal = len(self.loader.dataset)
-        err = 100. * incorrect.item() / nTotal
+        err = 100. * incorrect / nTotal
 
         self.logger.info(
-            'Test set: Average loss: {:.4f}, Error: {}/{} ({:.0f}%) (Device: {})\n'.format(
+            'Epoch: {}, Loss: {:.4f}, Error: {}/{} ({:.0f}%), Device: {}\n'.format(epoch,
             test_loss, incorrect, nTotal, err, device))
 
         self.append_save_data([epoch, test_loss, err])
+
