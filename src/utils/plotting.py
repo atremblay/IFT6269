@@ -17,7 +17,7 @@ class PlotHelper:
         # Get train Loss for last batch of epoch
         epochs = [int(pe[0]) for pe in train_data]
 
-        train_loss = [np.average([l for  x, l in zip(epochs, train_data[:, 1]) if x == i]) for i in range(1,len(test_loss))]
+        train_loss = [np.average([l for  x, l in zip(epochs, train_data[:, 1]) if x == i]) for i in range(1,len(test_loss)+1)]
 
         assert len(train_loss) == len(test_loss)
 
