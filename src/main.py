@@ -58,14 +58,12 @@ if __name__ == '__main__':
     test = Test(save_file_path=os.path.join(execution_data_folder, 'test.csv'), data_loader=data_loader, net=net, loss=loss)
     training_loop(0, args.args.epochs, optimizer, train, test, logger)
 
-
     # Fine-tune
     data_loader = DataLoader(d, batch_size=1)
     # Update jobs
     train.data_loader = data_loader
     test.data_loader = data_loader
     training_loop(args.args.epochs, args.args.finetuneepochs, optimizer, train, test, logger)
-
 
     # Plotting time
     plot_helper = PlotHelper(execution_data_folder)

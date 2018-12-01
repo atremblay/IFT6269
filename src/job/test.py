@@ -1,4 +1,3 @@
-from torch.nn import functional as F
 from .job import Job
 from utils.device import device
 
