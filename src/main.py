@@ -53,18 +53,17 @@ if __name__ == '__main__':
     # Initiate jobs
     execution_data_folder += os.path.sep + 'pid' + str(os.getpid())
 
-    execution_data_folder = '/home/execution/marc/pid17623'
     train = Train(save_file_path=os.path.join(execution_data_folder,  'train.csv'), data_loader=data_loader, net=net)
     test = Test(save_file_path=os.path.join(execution_data_folder, 'test.csv'), data_loader=data_loader, net=net)
-    # training_loop(0, args.args.epochs, optimizer, train, test, logger)
-    #
-    #
-    # # Fine-tune
-    # data_loader = DataLoader(d, batch_size=1)
-    # # Update jobs
-    # train.loader = data_loader
-    # test.loader = data_loader
-    # training_loop(args.args.epochs, args.args.finetuneepochs, optimizer, train, test, logger)
+    training_loop(0, args.args.epochs, optimizer, train, test, logger)
+
+
+    # Fine-tune
+    data_loader = DataLoader(d, batch_size=1)
+    # Update jobs
+    train.loader = data_loader
+    test.loader = data_loader
+    training_loop(args.args.epochs, args.args.finetuneepochs, optimizer, train, test, logger)
 
 
     # Plotting time
