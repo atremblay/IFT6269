@@ -61,8 +61,8 @@ if __name__ == '__main__':
     # Fine-tune
     data_loader = DataLoader(d, batch_size=1)
     # Update jobs
-    train.loader = data_loader
-    test.loader = data_loader
+    train.data_loader = data_loader
+    test.data_loader = data_loader
     training_loop(args.args.epochs, args.args.finetuneepochs, optimizer, train, test, logger)
 
 

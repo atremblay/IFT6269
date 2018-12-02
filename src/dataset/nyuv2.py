@@ -1,6 +1,10 @@
 from .dataload import DataSet
 import os
 from scipy import io
+from torchvision import transforms
+import torch
+import numpy as np
+from PIL import Image
 
 
 class NYUV2(DataSet):
@@ -8,6 +12,22 @@ class NYUV2(DataSet):
     Dataset found at http://dl.caffe.berkeleyvision.org/nyud.tar.gz
     It is not the original dataset, but it is the dataset with slightly smaller images with the 40 classes preprocessed.
     """
+    def __init__(self, name, dataset_dir):
+        super().__init__(name, dataset_dir)
+        self.transform =  {False: transforms.Compose([transforms.CenterCrop(224), transforms.ToTensor(),]),
+                           True: transforms.Compose([transforms.ToTensor(),])
+                           }
+
+        if self.task == 'classification':
+            self.transform_target = {False: transforms.Compose([transforms.CenterCrop(224)]),
+                                     True: transforms.Compose([])
+                                    }
+        else:
+            #Todo not good for regression
+            self.transform_target = {False: transforms.Compose([transforms.CenterCrop(224)]),
+                                     True: transforms.Compose([])
+                                    }
+        self.number_of_classes = 40 + 1
 
     def load_specific(self, d):
         """ Private function to load train, or tests dataset.
@@ -40,5 +60,16 @@ class NYUV2(DataSet):
 
         else:
             return io.loadmat(file_path)[field].squeeze()
+
+    def __getitem__(self, idx):
+
+        inp, labels = self.data[self.mode][idx]
+
+        inp = self.transform[self.fine_tune](inp)
+        labels = Image.fromarray(labels)
+        labels = self.transform_target[self.fine_tune](labels)
+        labels = torch.from_numpy(np.asarray(labels, dtype=np.long))
+
+        return inp, labels
 
 
