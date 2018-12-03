@@ -1,6 +1,8 @@
 import logging
 import csv
 import numpy as np
+from sklearn.metrics import mean_squared_error
+from math import sqrt
 
 class Job:
 
@@ -38,7 +40,7 @@ class Job:
             return indices
 
         def regression(output_batch):
-            tensor = output_batch.data
+            tensor = output_batch.data.cpu()
             return tensor
 
         mapping = {'regression': regression,
@@ -51,12 +53,12 @@ class Job:
             assert preds.size() == targets.size()
             bs, h, w = preds.size()
             n_pixels = bs * h * w
-            incorrect = preds.ne(targets).cpu().sum().item()
+            incorrect = preds.ne(targets).sum().item()
             err = incorrect / n_pixels
             return round(err, 5)
 
         def regression(preds, targets):
-            return ((preds.cpu().squeeze()-targets)**2).mean()
+            return sqrt(mean_squared_error(preds.squeeze().flatten(), targets.flatten()))
 
         mapping = {'regression': regression,
                    'classification':classification}

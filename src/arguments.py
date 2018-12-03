@@ -91,7 +91,7 @@ class Args:
         elif self.args.dataset == 'nyuv2' and (
             (self.args.task == 'regression' and self.args.loss not in ['mse_loss', 'aleatoric_loss']) or
              self.args.task == 'classification' and self.args.loss not in ['nll_loss', 'hc_loss']):
-            raise ValueError('Loss ' + self.args.loss + 'is not available for task ' + self.args.task)
+            raise ValueError('Loss ' + self.args.loss + ' is not available for task ' + self.args.task)
 
 
         loss_fct = {'nll_loss' : F.nll_loss,

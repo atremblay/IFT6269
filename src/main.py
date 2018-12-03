@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     d = args.resolve_dataset()
 
-    data_loader = DataLoader(d, batch_size=args.args.batch_size)
+    data_loader = DataLoader(d, batch_size=args.args.batch_size, shuffle=True)
 
     # Took these values directly from the other implementation
     net = FCDenseNet103(n_classes=d.number_of_classes)
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     training_loop(0, args.args.epochs, optimizer, train, test, logger)
 
     # Fine-tune
-    data_loader = DataLoader(d, batch_size=1)
+    data_loader = DataLoader(d, batch_size=1, shuffle=True)
     # Update jobs
     train.data_loader = data_loader
     test.data_loader = data_loader

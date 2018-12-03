@@ -29,12 +29,11 @@ class NYUV2(DataSet):
                                     }
             self.number_of_classes = 40 + 1
         else:
-            #Todo not good for regression
             self.transform_target = {False: transforms.Compose([transforms.CenterCrop(224), self.from_image_to_floattensor,]),
                                      True: transforms.Compose([self.from_image_to_floattensor, ])
 
                                     }
-            self.number_of_classes = 1
+            self.number_of_classes = 0
 
 
     def load_specific(self, d):
@@ -62,13 +61,7 @@ class NYUV2(DataSet):
 
     @staticmethod
     def _load_mat(file_path, field):
-        if field == 'groundTruth':
-            tmp = io.loadmat(file_path)[field][0][0][0][0]
-            print([tmp[i].max() for i in range(3)])
-            return tmp # todo: not in good format for image 3 channels
-
-        else:
-            return io.loadmat(file_path)[field].squeeze()
+        return io.loadmat(file_path)[field].squeeze()
 
     @staticmethod
     def from_image_to_longtensor(x):
@@ -77,6 +70,7 @@ class NYUV2(DataSet):
     @staticmethod
     def from_image_to_floattensor(x):
         return torch.from_numpy(np.asarray(x, dtype=np.float32))
+
 
     def __getitem__(self, idx):
 
