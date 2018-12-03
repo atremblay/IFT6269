@@ -1,4 +1,3 @@
-from torch.nn import functional as F
 from .job import Job
 from utils.device import device
 
@@ -17,7 +16,7 @@ class Train(Job):
 
             optimizer.zero_grad()
             output = self.net(data)
-            loss = F.nll_loss(output, target)
+            loss = self.loss(output, target)
 
             loss.backward()
             optimizer.step()

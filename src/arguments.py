@@ -4,6 +4,8 @@ from dataset import dataload
 import torch.optim as optim
 import logging
 from utils.device import device
+from torch.nn import functional as F
+from utils.losses import aleatoric_loss, heteroscedastic_classification_loss
 
 class Args:
 
@@ -24,6 +26,7 @@ class Args:
         self.parser.add_argument("--task", choices=['regression', 'classification'])
         self.parser.add_argument("--data_folder", default='/home/data/', type=str)
         self.parser.add_argument("--lr", default=1e-3, type=float)
+        self.parser.add_argument('--loss', required=True, choices=['nll_loss', 'mse_loss', 'hc_loss', 'aleatoric_loss'])
         self.args = self.parser.parse_args()
 
     def resolve_dataset(self):
@@ -39,9 +42,7 @@ class Args:
 
         d = data_sets[self.args.dataset]
 
-        if self.args.dataset == 'nyuv2':
-            d.task = self.args.task
-
+        d.init_transforms(self.args.task)
         d.mode = 'Train'  # Train or Test
         d.load()
         d.mode = 'Test'  # Train or Test
@@ -81,3 +82,23 @@ class Args:
             raise ValueError( 'Invalid optimizer value fro argument --opt:' + self.args.opt)
 
         return optimizer
+
+    def resolve_loss(self):
+        if self.args.dataset == 'camvid' and self.args.loss not in ['nll_loss', 'hc_loss']:
+            raise ValueError('Loss ' + self.args.loss + 'is not available for dataset '+ self.args.dataset)
+        elif self.args.dataset == 'make3d' and self.args.loss not in ['mse_loss', 'aleatoric_loss']:
+            raise ValueError('Loss ' + self.args.loss + 'is not available for dataset ' + self.args.dataset)
+        elif self.args.dataset == 'nyuv2' and (
+            (self.args.task == 'regression' and self.args.loss not in ['mse_loss', 'aleatoric_loss']) or
+             self.args.task == 'classification' and self.args.loss not in ['nll_loss', 'hc_loss']):
+            raise ValueError('Loss ' + self.args.loss + ' is not available for task ' + self.args.task)
+
+
+        loss_fct = {'nll_loss' : F.nll_loss,
+                    'mse_loss' : F.mse_loss,
+                    'hc_loss': heteroscedastic_classification_loss,
+                    'aleatoric_loss': aleatoric_loss,
+                   }
+
+        return loss_fct[self.args.loss]
+

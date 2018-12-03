@@ -1,6 +1,11 @@
 from .dataload import DataSet
 import os
 from scipy import io
+import torch
+from torchvision import transforms
+from torch.nn.functional import interpolate
+import numpy as np
+
 
 
 class MAKE3D(DataSet):
@@ -8,6 +13,19 @@ class MAKE3D(DataSet):
     Dataset found at ...
 
     """
+
+    def init_transforms(self, task=None):
+
+        self.task = task
+
+        self.transform =  {False: transforms.Compose([transforms.CenterCrop(224), transforms.ToTensor(),]),
+                           True: transforms.Compose([transforms.Resize((460, 345)), transforms.ToTensor(),])
+                           }
+        self.transform_target = {False: transforms.Compose([self.to_float_tensor, self.upsample, self.numpy_crop_center_224,]),
+                                 True: transforms.Compose([self.to_float_tensor, self.upsample,])
+
+                                }
+        self.number_of_classes = 0
 
     def load_specific(self, d):
         """ Private function to load train, or tests dataset.
@@ -58,5 +76,30 @@ class MAKE3D(DataSet):
     def _load_mat(file_path, field):
 
         tmp = io.loadmat(file_path)[field].squeeze()
-        return tmp
+        return tmp[:,:,3]
+
+    @staticmethod
+    def numpy_crop_center_224(img):
+        y, x = img.shape
+        cropx, cropy = 224, 224
+        startx = x // 2 - cropx // 2
+        starty = y // 2 - cropy // 2
+        return img[starty:starty + cropy, startx:startx + cropx]
+
+    @staticmethod
+    def to_float_tensor(x):
+        return torch.from_numpy(x.astype(np.float32))
+
+    @staticmethod
+    def upsample(x):
+        return interpolate(x.unsqueeze(dim=2).unsqueeze(dim=3).permute(3,2,0,1),
+                           size=(460, 305), mode='bilinear', align_corners=True).squeeze()
+
+    def __getitem__(self, idx):
+        inp, labels = self.data[self.mode][idx]
+
+        inp = self.transform[self.fine_tune](inp)
+        labels = self.transform_target[self.fine_tune](labels)
+
+        return inp, labels
 

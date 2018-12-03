@@ -9,8 +9,8 @@ class CAMVID(DataSet):
     """ CamVid dataset loading taking from https://github.com/alexgkendall/SegNet-Tutorial/tree/master/CamVid
 
     """
-    def __init__(self, name, dataset_dir):
-        super().__init__(name, dataset_dir)
+    def init_transforms(self, task=None):
+
         self.transform =  {False: transforms.Compose([transforms.CenterCrop(224), transforms.ToTensor(),]),
                            True: transforms.Compose([transforms.ToTensor(),])
                            }

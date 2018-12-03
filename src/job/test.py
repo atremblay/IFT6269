@@ -1,4 +1,3 @@
-from torch.nn import functional as F
 from .job import Job
 from utils.device import device
 
@@ -15,7 +14,7 @@ class Test(Job):
             data, target = device(data), device(target)
 
             output = self.net(data)
-            test_loss += F.nll_loss(output, target).item()
+            test_loss += self.loss(output, target).item()
             pred = self.get_predictions(output)
             incorrect +=  self.error(pred, target.data.cpu())
 
