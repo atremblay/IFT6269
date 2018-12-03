@@ -64,4 +64,3 @@ class Job:
                    'classification':classification}
 
         return mapping[self.data_loader.dataset.task](preds, targets)
-
