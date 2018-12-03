@@ -31,6 +31,7 @@ class Args:
 
     def resolve_dataset(self):
 
+        # Resolve task
         if self.args.dataset == 'nyuv2':
             if self.args.task is None:
                 msg = 'Need to provide --task when you select --dataset nyuv2'

@@ -11,6 +11,8 @@ class CAMVID(DataSet):
     """
     def init_transforms(self, task=None):
 
+        self.task = 'classification'
+
         self.transform =  {False: transforms.Compose([transforms.CenterCrop(224), transforms.ToTensor(),]),
                            True: transforms.Compose([transforms.ToTensor(),])
                            }
