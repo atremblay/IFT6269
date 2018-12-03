@@ -1,16 +1,29 @@
-import torch.nn as nn
-from .layers import *
+from model.layers import *
 
 
 class FCDenseNet(nn.Module):
     def __init__(self, in_channels=3, down_blocks=(5, 5, 5, 5, 5),
                  up_blocks=(5, 5, 5, 5, 5), bottleneck_layers=5,
                  growth_rate=16, out_chans_first_conv=48, n_classes=12):
+        """
+
+        :param in_channels:
+        :param down_blocks:
+        :param up_blocks:
+        :param bottleneck_layers:
+        :param growth_rate:
+        :param out_chans_first_conv:
+        :param n_classes: If n_classes==0, model is set in regression task
+        """
         super().__init__()
         self.down_blocks = down_blocks
         self.up_blocks = up_blocks
         cur_channels_count = 0
         skip_connection_channel_counts = []
+        if n_classes==0:
+            self.task = 'regression'
+        else:
+            self.task = 'classification'
 
         #  First Convolution ##
 
@@ -79,6 +92,8 @@ class FCDenseNet(nn.Module):
         cur_channels_count += growth_rate * up_blocks[-1]
 
         # Softmax ##
+        if self.task == 'regression':
+            n_classes = 1
 
         self.finalConv = nn.Conv2d(
             in_channels=cur_channels_count,
@@ -88,7 +103,19 @@ class FCDenseNet(nn.Module):
             padding=0,
             bias=True
         )
-        self.softmax = nn.LogSoftmax(dim=1)
+
+        if self.task == 'classification':
+            self.format = nn.LogSoftmax(dim=1)
+        else:
+            self.format = nn.ReLU()
+
+        self.apply(self.weights_init)
+
+    @staticmethod
+    def weights_init(m):
+        if isinstance(m, nn.Conv2d):
+            nn.init.kaiming_uniform_(m.weight)
+            m.bias.data.zero_()
 
     def forward(self, x):
         out = self.firstconv(x)
@@ -106,7 +133,7 @@ class FCDenseNet(nn.Module):
             out = self.denseBlocksUp[i](out)
 
         out = self.finalConv(out)
-        out = self.softmax(out)
+        out = self.format(out)
         return out
 
 
