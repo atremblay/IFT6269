@@ -4,7 +4,7 @@ from model.layers import *
 class FCDenseNet(nn.Module):
     def __init__(self, in_channels=3, down_blocks=(5, 5, 5, 5, 5),
                  up_blocks=(5, 5, 5, 5, 5), bottleneck_layers=5,
-                 growth_rate=16, out_chans_first_conv=48, n_classes=12):
+                 growth_rate=16, out_chans_first_conv=48, n_classes=12, bnn=False):
         """
 
         :param in_channels:
@@ -20,10 +20,12 @@ class FCDenseNet(nn.Module):
         self.up_blocks = up_blocks
         cur_channels_count = 0
         skip_connection_channel_counts = []
-        if n_classes==0:
+        if n_classes == 0:
             self.task = 'regression'
         else:
             self.task = 'classification'
+
+        self.bnn = bnn
 
         #  First Convolution ##
 
@@ -104,10 +106,26 @@ class FCDenseNet(nn.Module):
             bias=True
         )
 
-        if self.task == 'classification':
+        # If Bayesian Network for classification task
+        if self.bnn and self.task == 'classification':
+
+            self.finalConv_sigma = nn.Conv2d( #second header of last layer to get sigma
+                in_channels=cur_channels_count,
+                out_channels=n_classes,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                bias=True
+            )
+        elif self.bnn and self.task == 'regression':
+            raise ValueError('Not Implemented')
+
+        elif self.task == 'classification':
             self.format = nn.LogSoftmax(dim=1)
-        else:
+        elif self.task == 'regression':
             self.format = nn.ReLU()
+        else:
+            raise ValueError('Set up not defined')
 
         self.apply(self.weights_init)
 
@@ -132,27 +150,31 @@ class FCDenseNet(nn.Module):
             out = self.transUpBlocks[i](out, skip)
             out = self.denseBlocksUp[i](out)
 
-        out = self.finalConv(out)
-        out = self.format(out)
-        return out
+        f = self.finalConv(out)
+
+        if self.bnn:
+            sigma = self.finalConv_sigma(out)
+            return f, sigma
+        else:
+            return self.format(f),
 
 
-def FCDenseNet57(n_classes):
+def FCDenseNet57(n_classes, bnn):
     return FCDenseNet(
         in_channels=3, down_blocks=(4, 4, 4, 4, 4),
         up_blocks=(4, 4, 4, 4, 4), bottleneck_layers=4,
-        growth_rate=12, out_chans_first_conv=48, n_classes=n_classes)
+        growth_rate=12, out_chans_first_conv=48, n_classes=n_classes, bnn=bnn)
 
 
-def FCDenseNet67(n_classes):
+def FCDenseNet67(n_classes, bnn):
     return FCDenseNet(
         in_channels=3, down_blocks=(5, 5, 5, 5, 5),
         up_blocks=(5, 5, 5, 5, 5), bottleneck_layers=5,
-        growth_rate=16, out_chans_first_conv=48, n_classes=n_classes)
+        growth_rate=16, out_chans_first_conv=48, n_classes=n_classes, bnn=bnn)
 
 
-def FCDenseNet103(n_classes):
+def FCDenseNet103(n_classes, bnn):
     return FCDenseNet(
         in_channels=3, down_blocks=(4, 5, 7, 10, 12),
         up_blocks=(12, 10, 7, 5, 4), bottleneck_layers=15,
-        growth_rate=16, out_chans_first_conv=48, n_classes=n_classes)
+        growth_rate=16, out_chans_first_conv=48, n_classes=n_classes, bnn=bnn)

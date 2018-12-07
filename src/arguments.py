@@ -5,7 +5,7 @@ import torch.optim as optim
 import logging
 from utils.device import device
 from torch.nn import functional as F
-from utils.losses import aleatoric_loss, heteroscedastic_classification_loss
+from utils.losses import aleatoric_loss, hc_loss
 
 class Args:
 
@@ -95,9 +95,9 @@ class Args:
             raise ValueError('Loss ' + self.args.loss + ' is not available for task ' + self.args.task)
 
 
-        loss_fct = {'nll_loss' : F.nll_loss,
-                    'mse_loss' : F.mse_loss,
-                    'hc_loss': heteroscedastic_classification_loss,
+        loss_fct = {'nll_loss': F.nll_loss,
+                    'mse_loss': F.mse_loss,
+                    'hc_loss': hc_loss,
                     'aleatoric_loss': aleatoric_loss,
                    }
 

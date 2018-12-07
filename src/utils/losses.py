@@ -15,11 +15,11 @@ def tile(input, dim, n_tile):
     repeat_idx = [1] * input.dim()
     repeat_idx[dim] = n_tile
     input = input.repeat(*(repeat_idx))
-    order_index = torch.LongTensor(np.concatenate([init_dim * np.arange(n_tile) + i for i in range(init_dim)]))
+    order_index = torch.cuda.LongTensor(np.concatenate([init_dim * np.arange(n_tile) + i for i in range(init_dim)]))
     return torch.index_select(input, dim, order_index)
 
 
-def heteroscedastic_classification_loss(fs, sigmas, target, T=50):
+def hc_loss(fs, sigmas, target, T=50):
     """
     loss function of heteroscedastic classifciation for semantic segmentation
     :param fs: output before activation of output layer
@@ -33,33 +33,38 @@ def heteroscedastic_classification_loss(fs, sigmas, target, T=50):
 
     nt, ht, wt = target.size()
 
+    assert nt == n and ht == h and wt == w
+
     # Handle inconsistent size between input and target
+    # Todo to remove?
     if h != ht or w != wt:
         fs = F.interpolate(fs, size=(ht, wt), mode="bilinear", align_corners=True)
         sigmas = F.interpolate(sigmas, size=(ht, wt), mode="bilinear", align_corners=True)
 
     # generalize epsilon(n*h*w, T, c) from gaussian distribution
-    c = [n * h * w, T, c]
-    mean = torch.zeros(c)
-    var = torch.ones(c)
-    eps = torch.distributions.Normal(mean, var)
+    batch_matrix= [n * h * w, T, c]
+    mean = torch.zeros(batch_matrix)
+    var = torch.ones(batch_matrix)
+    eps_normal = torch.distributions.Normal(mean, var)
+    eps = eps_normal.sample()
     # reshape to (n*h*w, 1, c)
+    # TODO: to verify
     fs = fs.transpose(1, 2).transpose(2, 3).contiguous().view(-1, 1, c)
     sigmas = sigmas.transpose(1, 2).transpose(2, 3).contiguous().view(-1, 1, c)
     # tile each pixel by T times and get (n*h*w, T, c)
     fs = tile(fs, 1, T)
     sigmas = tile(sigmas, 1,T)
 
-    target = target.view(-1)  # reshape target to (n*h*w)
-    target_onehot = torch.FloatTensor(n * h * w, c)  # define onehot coding tensor (n*h*w, c)
+    target = target.view(-1,1)  # reshape target to (n*h*w)
+    target_onehot = torch.cuda.FloatTensor(n * h * w, c)  # define onehot coding tensor (n*h*w, c)
     target_onehot.zero_()  # reset to zero
     target_onehot.scatter_(1, target, 1)  # get one-hot coding(n*h*w, c)
+    target_onehot = target_onehot.view(-1, 1, c)
     target_onehot = tile(target_onehot, 1, T) # tile each pixel by T times and get (n*h*w, T, c)
 
-    x = fs + sigmas * eps
+    x = fs + sigmas * eps.cuda()
     x_c = torch.sum(x*target_onehot, dim=2)
-    loss = torch.sum(-torch.log(torch.sum(torch.exp(x_c - torch.logsumexp(x, dim=2)),dim=1)))
-
+    loss = torch.sum(-torch.log(torch.mean(torch.exp(x_c - torch.logsumexp(x, dim=2)),dim=1)))
     return loss
 
 

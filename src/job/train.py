@@ -16,12 +16,12 @@ class Train(Job):
 
             optimizer.zero_grad()
             output = self.net(data)
-            loss = self.loss(output, target)
+            loss = self.loss(*output, target)
 
             loss.backward()
             optimizer.step()
             nProcessed += len(data)
-            pred = self.get_predictions(output)
+            pred = self.get_predictions(output[0])
             incorrect = self.error(pred, target.data.cpu())
             err = 100. * incorrect / len(data)
             partialEpoch = epoch + batch_idx / len(self.data_loader)

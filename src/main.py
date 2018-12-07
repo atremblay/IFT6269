@@ -45,7 +45,8 @@ if __name__ == '__main__':
     data_loader = DataLoader(d, batch_size=args.args.batch_size, shuffle=True)
 
     # Took these values directly from the other implementation
-    net = FCDenseNet103(n_classes=d.number_of_classes)
+    bnn = True if args.args.loss in ['hc_loss', 'aleatoric_loss'] else False
+    net = FCDenseNet103(n_classes=d.number_of_classes, bnn=bnn)
     net = args.resolve_cuda(net)
     optimizer = args.resolve_optimizer(net)
 
