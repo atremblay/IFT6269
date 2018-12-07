@@ -37,8 +37,8 @@ def hc_loss(fs, sigmas, target, T=50):
     loss = device(torch.zeros(n, h * w))
     # https://github.com/kyle-dorman/bayesian-neural-network-blogpost
     for t in range(T):
-        x = F.log_softmax((fs + sigmas * eps[t]).squeeze(), dim=1)
-        loss += F.cross_entropy(x, target.squeeze())
+        x = F.log_softmax((fs + sigmas * eps[t]).squeeze(dim=2), dim=1)
+        loss += F.cross_entropy(x, target.squeeze(dim=1))
 
     return (loss.sum(dim=1)/T).mean()
 
