@@ -64,3 +64,23 @@ class Job:
                    'classification':classification}
 
         return mapping[self.data_loader.dataset.task](preds, targets)
+
+    def IoU(self, target, pred, n_classes):
+        iou = np.empty(n_classes)
+
+        # Macro IoU is over all classes at once.
+        # It sums up the number of pixels that intersect accross all classes
+        # Same thing for union. This counter balance rare classes in
+        # an image where the prediction could be perfect, biasing
+        # the average of all the IoU of all the classes
+        macro_intersection = 0
+        macro_union = 0
+        for i in range(n_classes):
+            target_mask = (target == i).astype(bool)
+            pred_mask = (pred == i).astype(bool)
+            intersection = target_mask & pred_mask
+            macro_intersection += intersection.sum()
+            union = target_mask | pred_mask
+            macro_union += union.sum()
+            iou[i] = intersection.sum() / union.sum()
+        return iou, macro_intersection / macro_union

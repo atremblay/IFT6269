@@ -1,6 +1,6 @@
 from .job import Job
 from utils.device import device
-
+import gc
 
 class Train(Job):
 
@@ -33,3 +33,6 @@ class Train(Job):
                 )
 
             self.append_save_data([partialEpoch, loss.item(), err])
+
+            gc.collect()
+

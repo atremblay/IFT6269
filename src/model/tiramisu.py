@@ -117,6 +117,7 @@ class FCDenseNet(nn.Module):
                 padding=0,
                 bias=True
             )
+            self.format = nn.Softplus()
         elif self.bnn and self.task == 'regression':
             raise ValueError('Not Implemented')
 
@@ -154,7 +155,7 @@ class FCDenseNet(nn.Module):
 
         if self.bnn:
             sigma = self.finalConv_sigma(out)
-            return f, sigma
+            return f, self.format(sigma)
         else:
             return self.format(f),
 
