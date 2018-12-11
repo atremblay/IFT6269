@@ -3,6 +3,8 @@ import csv
 import numpy as np
 from sklearn.metrics import mean_squared_error
 from math import sqrt
+import gc
+
 
 class Job:
 
@@ -16,6 +18,12 @@ class Job:
 
     def init_transforms(self, task=None):
         pass
+
+    def clean(self):
+        self.data_loader = None
+        self.net = None
+        self.loss = None
+        gc.collect
 
     def append_save_data(self, content):
         with open(self.save_file_path, 'a') as f:
@@ -65,9 +73,40 @@ class Job:
 
         return mapping[self.data_loader.dataset.task](preds, targets)
 
-    def IoU(self, target, pred, n_classes):
-        iou = np.empty(n_classes)
+    def specific_metrics(self, preds, targets):
 
+        def IoU(preds, targets):
+
+            return [['IoU', np.mean([self.IoU(preds[i], targets.data.cpu()[i]) for i in range(preds.shape[0])])]]
+
+        def reg(preds, targets):
+
+            def rel(preds, targets):
+                return np.mean(np.abs(preds-targets)/targets)
+
+            def rms(preds, targets):
+                return np.sqrt(np.mean(np.linalg.norm(preds - targets)))
+
+            def log_10(preds, targets):
+                return np.sqrt(np.mean(np.linalg.norm(np.log10(preds) - np.log10(targets))))
+
+            targets = targets.cpu().data.numpy()
+            preds = preds.cpu().data.numpy()
+
+            return [['rel', rel(preds, targets)],
+                    ['rms', rms(preds, targets)],
+                    ['log_10', log_10(preds, targets)],
+                    ]
+
+        mapping = {'regression':  reg,
+                   'classification':  IoU}
+
+        return mapping[self.data_loader.dataset.task](preds, targets)
+
+    def IoU(self, pred, target):
+        n_classes = self.data_loader.dataset.number_of_classes
+        target = target.data.numpy()
+        pred = pred.data.numpy()
         # Macro IoU is over all classes at once.
         # It sums up the number of pixels that intersect accross all classes
         # Same thing for union. This counter balance rare classes in
@@ -82,5 +121,4 @@ class Job:
             macro_intersection += intersection.sum()
             union = target_mask | pred_mask
             macro_union += union.sum()
-            iou[i] = intersection.sum() / union.sum()
-        return iou, macro_intersection / macro_union
+        return macro_intersection / macro_union

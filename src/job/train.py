@@ -1,6 +1,6 @@
 from .job import Job
 from utils.device import device
-import gc
+
 
 class Train(Job):
 
@@ -12,27 +12,27 @@ class Train(Job):
         nTrain = len(self.data_loader.dataset)
         for batch_idx, (data, target) in enumerate(self.data_loader):
 
-            data, target = device(data), device(target)
+            target = device(target)
 
             optimizer.zero_grad()
-            output = self.net(data)
+            output = self.net(device(data))
             loss = self.loss(*output, target)
 
             loss.backward()
             optimizer.step()
+
             nProcessed += len(data)
             pred = self.get_predictions(output[0])
             incorrect = self.error(pred, target.data.cpu())
             err = 100. * incorrect / len(data)
             partialEpoch = epoch + batch_idx / len(self.data_loader)
+            metric = self.specific_metrics(pred, target)
 
             self.logger.info(
-                'Epoch: {:.2f} [{}/{} ({:.0f}%)], Loss: {:.6f}, Error: {:.6f}, Device: {}'.format(
+                'Epoch: {:.2f} [{}/{} ({:.0f}%)], Loss: {:.6f}, Error: {:.6f}, , {}, Device: {}'.format(
                 partialEpoch, nProcessed, nTrain, 100. * batch_idx / len(self.data_loader),
-                loss.item(), err, device)
+                loss.item(), err, metric, device)
                 )
 
             self.append_save_data([partialEpoch, loss.item(), err])
-
-            gc.collect()
 

@@ -6,7 +6,7 @@ from torchvision import transforms
 from torch.nn.functional import interpolate
 import numpy as np
 from PIL import Image
-import random
+import torchvision.transforms.functional as TF
 
 
 class MAKE3D(DataSet):
@@ -14,25 +14,34 @@ class MAKE3D(DataSet):
     Dataset found at ...
 
     """
+    # Override of attribute mode in parent class
+    @property
+    def mode(self):
+        return self._mode
+
+    @mode.setter
+    def mode(self, value):
+        if value == 'Test':
+            self._mode = 'Val'
+        else:
+            self._mode = value
 
     def init_transforms(self, task=None):
 
         self.task = 'regression'
 
-        self.transform =  {False: transforms.Compose([transforms.Resize((460, 345)), transforms.CenterCrop(224),]),
+        self.transform = {False: transforms.Compose([transforms.Resize((460, 345))]),
                            True: transforms.Compose([transforms.Resize((460, 345)),])
                            }
-        self.transform_target = {False: transforms.Compose([self.to_float_tensor, self.upsample, self.tensor_to_image, transforms.CenterCrop(224),
-                                                            ]),
+        self.transform_target = {False: transforms.Compose([self.to_float_tensor, self.upsample, self.tensor_to_image,]),
                                  True: transforms.Compose([self.to_float_tensor, self.upsample, self.tensor_to_image])
-
                                 }
         self.to_tensor = transforms.ToTensor()
         self.number_of_classes = 0
 
-        self.random_transforms = {False:[transforms.RandomResizedCrop(size=224), transforms.RandomRotation(15)],
-                                  True: [transforms.RandomResizedCrop(size=345), transforms.RandomRotation(15)],
-                                  }
+        self.transform_2size = {False: transforms.Compose([transforms.CenterCrop(224), ]),
+                          True: transforms.Compose([])
+                          }
 
     def load_specific(self, d):
         """ Private function to load train, or tests dataset.
@@ -103,11 +112,17 @@ class MAKE3D(DataSet):
         return interpolate(x.unsqueeze(dim=2).unsqueeze(dim=3).permute(3,2,0,1),
                            size=(460, 305), mode='bilinear', align_corners=True).squeeze()
 
-
     def apply_random_transforms(self, inp, labels):
 
-        for fct in self.random_transforms[self.fine_tune]:
-            inp, labels = self.apply_ramdom(inp, labels, fct)
+        if self.fine_tune:
+            s = (460, 345)
+        else:
+            s = (224, 224)
+
+        i, j, h, w = transforms.RandomCrop.get_params(inp, output_size=s)
+
+        inp = TF.crop(inp, i, j, h, w)
+        labels = TF.crop(labels, i, j, h, w)
 
         return inp, labels
 
@@ -115,24 +130,19 @@ class MAKE3D(DataSet):
     def tensor_to_image(x):
         return Image.fromarray(np.asarray(x))
 
-    @staticmethod
-    def apply_ramdom(inp, labels, transform_fct):
-        seed = random.randint(0, 2 ** 32)
-        random.seed(seed)
-        labels = transform_fct(labels)
-        random.seed(seed)
-        inp = transform_fct(inp)
-
-        return inp, labels
-
-
     def __getitem__(self, idx):
         inp, labels = self.data[self.mode][idx]
+
+        labels[labels > 70.0] = 70.0
 
         inp = self.transform[self.fine_tune](inp)
         labels = self.transform_target[self.fine_tune](labels)
 
-        inp, labels = self.apply_random_transforms(inp, labels)
+        if self.mode == 'Train5':
+            inp, labels = self.apply_random_transforms(inp, labels)
+        else:
+            inp = self.transform_2size[self.fine_tune](inp)
+            labels = self.transform_2size[self.fine_tune](labels)
 
         return self.to_tensor(inp), np.asfarray(labels, dtype=np.float32)
 

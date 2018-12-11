@@ -6,6 +6,9 @@ import logging
 from utils.device import device
 from torch.nn import functional as F
 from utils.losses import aleatoric_loss, hc_loss
+import sys
+import os
+
 
 class Args:
 
@@ -16,8 +19,8 @@ class Args:
         self.parser = argparse.ArgumentParser()
         # Add arguments
         self.parser.add_argument('--batch_size', type=int, default=4)
-        self.parser.add_argument('--epochs', type=int, default=20)
-        self.parser.add_argument('--finetuneepochs', type=int, default=10)
+        self.parser.add_argument('--epochs', type=int, default=50)#35
+        self.parser.add_argument('--finetuneepochs', type=int, default=0)
         self.parser.add_argument('--cuda', default=False, action='store_true')
         self.parser.add_argument('--save', type=str, default='/home/execution')
         self.parser.add_argument('--seed', type=int, default=42)
@@ -44,10 +47,12 @@ class Args:
         d = data_sets[self.args.dataset]
 
         d.init_transforms(self.args.task)
-        d.mode = 'Train'  # Train or Test
+        d.mode = 'Train'  # Train or Val
         d.load()
-        d.mode = 'Test'  # Train or Test
+        d.mode = 'Val'  # Train or Val
         d.load()
+
+        self.resolve_has_plot_variance(d)
 
         return d
 
@@ -58,7 +63,7 @@ class Args:
         if device.isCuda and not torch.cuda.is_available():
             print("CUDA not available on your machine. Setting it back to False")
             self.args.cuda = False
-            device.isCuda=False
+            device.isCuda = False
 
         if device.isCuda:
             net = net.cuda()
@@ -80,7 +85,7 @@ class Args:
             optimizer = optim.RMSprop(net.parameters(), weight_decay=1e-4, lr=self.args.lr)
         else:
             self.parser.print_help()
-            raise ValueError( 'Invalid optimizer value fro argument --opt:' + self.args.opt)
+            raise ValueError('Invalid optimizer value fro argument --opt:' + self.args.opt)
 
         return optimizer
 
@@ -102,4 +107,14 @@ class Args:
                    }
 
         return loss_fct[self.args.loss]
+
+    def resolve_has_plot_variance(self, dataset):
+        if self.args.loss in ['aleatoric_loss', 'hc_loss']:
+            dataset.has_plot_variance = True
+
+    @staticmethod
+    def save(path):
+        with open(os.path.join(path, 'commandline_args.txt'), 'w') as f:
+            f.write('\n'.join(sys.argv[1:]))
+
 

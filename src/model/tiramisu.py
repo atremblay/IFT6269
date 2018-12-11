@@ -146,6 +146,7 @@ class FCDenseNet(nn.Module):
             out = self.transDownBlocks[i](out)
 
         out = self.bottleneck(out)
+
         for i in range(len(self.up_blocks)):
             skip = skip_connections.pop()
             out = self.transUpBlocks[i](out, skip)

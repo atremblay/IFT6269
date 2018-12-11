@@ -1,6 +1,7 @@
 import torch
 from .device import device
 import torch.nn.functional as F
+import gc
 
 
 def hc_loss(fs, sigmas, target, T=50):
@@ -28,19 +29,17 @@ def hc_loss(fs, sigmas, target, T=50):
     if target.size()[1:] != fs.size()[2:]:
         raise ValueError('Expected target size {}, got {}'.format(out_size, target.size()))
     fs = fs.contiguous().view(n, c, 1, -1)
-    sigmas = sigmas.contiguous().view(n, c, 1, -1) #add soft plus to sigma
+    sigmas = sigmas.contiguous().view(n, c, 1, -1)
     target = target.contiguous().view(n, 1, -1)
 
-    # generalize epsilon(T, c, 1, h*w) from gaussian distribution
-    eps = device(get_epsilon(size=(T, c, 1, h*w)))
-
-    loss = device(torch.zeros(n, h * w))
+    log_softmax = device(torch.zeros(n, c, h * w))
     # https://github.com/kyle-dorman/bayesian-neural-network-blogpost
     for t in range(T):
-        x = F.log_softmax((fs + sigmas * eps[t]).squeeze(dim=2), dim=1)
-        loss += F.cross_entropy(x, target.squeeze(dim=1))
+        x = (fs + sigmas * device(get_epsilon(size=(c, 1, h * w)))).squeeze(dim=2)
+        b = x.max(dim=1, keepdim=True)[0].repeat(1, 12, 1)
+        log_softmax += x-b-torch.logsumexp(x-b, dim=1, keepdim=True).repeat(1, 12, 1)
 
-    return (loss.sum(dim=1)/T).mean()
+    return F.nll_loss(log_softmax/T, target.squeeze(dim=1))
 
 
 def aleatoric_loss(true, pred, var):
