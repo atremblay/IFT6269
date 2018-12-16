@@ -47,21 +47,39 @@ class PlotHelper:
         fig, ax = plt.subplots(row, n_plots)
         fig.subplots_adjust(wspace=0.01, hspace=0.01)
 
-        ax[0, 0].set_axis_off()
-        ax[0, 0].imshow(np.moveaxis(data.cpu().squeeze().numpy(), 0, -1))
+        if row == 1:
+            ax[0].set_axis_off()
+            ax[0].imshow(np.moveaxis(data.cpu().squeeze().numpy(), 0, -1))
 
-        ax[0, 1].set_axis_off()
-        ax[0, 1].imshow(target.detach().cpu().squeeze().numpy(), norm=Normalize(target.min(), target.max()))
+            ax[1].set_axis_off()
+            ax[1].imshow(target.detach().cpu().squeeze().numpy(), norm=Normalize(target.min(), target.max()))
 
-        ax[0, 2].set_axis_off()
-        pred = fs.cpu().numpy()
+            ax[2].set_axis_off()
+            pred = fs.cpu().numpy()
 
-        if task == 'classification':
-            pred = pred.argmax(axis=0)
+            if task == 'classification':
+                pred = pred.argmax(axis=0)
+            else:
+                pred = pred.squeeze()
+
+            ax[2].imshow(pred, norm=Normalize(pred.min(), pred.max()))
+
         else:
-            pred = pred.squeeze()
+            ax[0, 0].set_axis_off()
+            ax[0, 0].imshow(np.moveaxis(data.cpu().squeeze().numpy(), 0, -1))
 
-        ax[0, 2].imshow(pred, norm=Normalize(pred.min(), pred.max()))
+            ax[0, 1].set_axis_off()
+            ax[0, 1].imshow(target.detach().cpu().squeeze().numpy(), norm=Normalize(target.min(), target.max()))
+
+            ax[0, 2].set_axis_off()
+            pred = fs.cpu().numpy()
+
+            if task == 'classification':
+                pred = pred.argmax(axis=0)
+            else:
+                pred = pred.squeeze()
+
+            ax[0, 2].imshow(pred, norm=Normalize(pred.min(), pred.max()))
 
         return fig, ax
 
@@ -87,7 +105,7 @@ class PlotHelper:
         assert (((softmax/T).sum(dim=0) - 1).abs() < 0.000001).all()
 
         mean_softmax = softmax/T
-        entropy = -(torch.exp(mean_softmax) * np.log(mean_softmax)).sum(dim=0)
+        entropy = -(mean_softmax * np.log(mean_softmax)).sum(dim=0)
 
         ax[1, 0].set_axis_off()
         ax[1, 0].imshow(entropy.numpy(), norm=Normalize(entropy.min(), entropy.max()), cmap=cm.jet)

@@ -31,9 +31,9 @@ class Test(Job):
                 output = device(fs), device(sigma)
             else:
 
-                output = self.net
-                for o in output:
-                    o.detach()
+                output = self.net(data)
+                output = [o.detach() for o in output]
+
                 if i == 0 or i == 50:
                     fig, ax = plot_helper.data_target_prediction(1, output[0], data, target, self.data_loader.dataset.task)
 
