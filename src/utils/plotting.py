@@ -84,6 +84,18 @@ class PlotHelper:
         return fig, ax
 
     @staticmethod
+    def heat_map_softmax(ax, fs):
+
+        fs = F.softmax(fs.squeeze(dim=0), dim=0).cpu()
+        entropy = -(fs * np.log(fs)).sum(dim=0)
+
+        ax[1, 0].set_axis_off()
+        ax[1, 0].imshow(entropy.numpy(), norm=Normalize(entropy.min(), entropy.max()), cmap=cm.jet)
+
+        ax[1, 1].set_axis_off()
+        ax[1, 2].set_axis_off()
+
+    @staticmethod
     def heat_map(ax, fs, sigmas, predicted_variance, T=50):
 
         def get_epsilon(size):

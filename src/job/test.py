@@ -35,7 +35,8 @@ class Test(Job):
                 output = [o.detach() for o in output]
 
                 if i == 0 or i == 50:
-                    fig, ax = plot_helper.data_target_prediction(1, output[0], data, target, self.data_loader.dataset.task)
+                    fig, ax = plot_helper.data_target_prediction(2, output[0], data, target, self.data_loader.dataset.task)
+                    plot_helper.heat_map_softmax(ax, output[0])
 
             if i == 0 or i == 50:
                 plot_helper.plot_helper(fig, i)
