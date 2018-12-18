@@ -31,11 +31,12 @@ class DataSet(Dataset):
     def __init__(self, name, dataset_dir):
         self.name = name
         self.dir = dataset_dir
-        self.data = {'Test': None, 'Train': None}
-        self.fine_tune=False
+        self.data = {'Test': None, 'Train': None, 'Val': None}
+        self.fine_tune = False
         self.mode = 'Train'
         self.task = None
         self.transform = None
+        self.has_plot_variance = False
 
     def load(self):
         """
