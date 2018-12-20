@@ -1,25 +1,10 @@
-import numpy as np
 import torch
+from .device import device
 import torch.nn.functional as F
+import gc
 
 
-def tile(input, dim, n_tile):
-    """
-    tile the dimention of input tensor by T times
-    :param input: input tensor
-    :param dim: dimention of input
-    :param n_tile: number of tiling
-    :return: resulted tensor
-    """
-    init_dim = input.size(dim)
-    repeat_idx = [1] * input.dim()
-    repeat_idx[dim] = n_tile
-    input = input.repeat(*(repeat_idx))
-    order_index = torch.LongTensor(np.concatenate([init_dim * np.arange(n_tile) + i for i in range(init_dim)]))
-    return torch.index_select(input, dim, order_index)
-
-
-def heteroscedastic_classification_loss(fs, sigmas, target, T=50):
+def hc_loss(fs, sigmas, target, T=50):
     """
     loss function of heteroscedastic classifciation for semantic segmentation
     :param fs: output before activation of output layer
@@ -29,38 +14,32 @@ def heteroscedastic_classification_loss(fs, sigmas, target, T=50):
     :return: loss for semantic segmentation
     """
 
-    n, c, h, w = fs.size()
+    def get_epsilon(size):
+        mean = torch.zeros(size)
+        var = torch.ones(size)
+        eps_normal = torch.distributions.Normal(mean, var)
+        return eps_normal.sample()
 
+    n, c, h, w = fs.size()
     nt, ht, wt = target.size()
 
-    # Handle inconsistent size between input and target
-    if h != ht or w != wt:
-        fs = F.interpolate(fs, size=(ht, wt), mode="bilinear", align_corners=True)
-        sigmas = F.interpolate(sigmas, size=(ht, wt), mode="bilinear", align_corners=True)
+    assert nt == n and ht == h and wt == w
 
-    # generalize epsilon(n*h*w, T, c) from gaussian distribution
-    c = [n * h * w, T, c]
-    mean = torch.zeros(c)
-    var = torch.ones(c)
-    eps = torch.distributions.Normal(mean, var)
-    # reshape to (n*h*w, 1, c)
-    fs = fs.transpose(1, 2).transpose(2, 3).contiguous().view(-1, 1, c)
-    sigmas = sigmas.transpose(1, 2).transpose(2, 3).contiguous().view(-1, 1, c)
-    # tile each pixel by T times and get (n*h*w, T, c)
-    fs = tile(fs, 1, T)
-    sigmas = tile(sigmas, 1,T)
+    out_size = (n,) + fs.size()[2:]
+    if target.size()[1:] != fs.size()[2:]:
+        raise ValueError('Expected target size {}, got {}'.format(out_size, target.size()))
+    fs = fs.contiguous().view(n, c, 1, -1)
+    sigmas = sigmas.contiguous().view(n, c, 1, -1)
+    target = target.contiguous().view(n, 1, -1)
 
-    target = target.view(-1)  # reshape target to (n*h*w)
-    target_onehot = torch.FloatTensor(n * h * w, c)  # define onehot coding tensor (n*h*w, c)
-    target_onehot.zero_()  # reset to zero
-    target_onehot.scatter_(1, target, 1)  # get one-hot coding(n*h*w, c)
-    target_onehot = tile(target_onehot, 1, T) # tile each pixel by T times and get (n*h*w, T, c)
+    log_softmax = device(torch.zeros(n, c, h * w))
+    # https://github.com/kyle-dorman/bayesian-neural-network-blogpost
+    for t in range(T):
+        x = (fs + sigmas * device(get_epsilon(size=(c, 1, h * w)))).squeeze(dim=2)
+        b = x.max(dim=1, keepdim=True)[0].repeat(1, 12, 1)
+        log_softmax += x-b-torch.logsumexp(x-b, dim=1, keepdim=True).repeat(1, 12, 1)
 
-    x = fs + sigmas * eps
-    x_c = torch.sum(x*target_onehot, dim=2)
-    loss = torch.sum(-torch.log(torch.sum(torch.exp(x_c - torch.logsumexp(x, dim=2)),dim=1)))
-
-    return loss
+    return F.nll_loss(log_softmax/T, target.squeeze(dim=1))
 
 
 def aleatoric_loss(true, pred, var):
